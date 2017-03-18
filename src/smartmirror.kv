@@ -1,0 +1,78 @@
+# File name: smartmirror.kv
+#:kivy 1.9.0
+
+
+<PowerButton>
+	size_hint: None, None
+	size: 30, 30	
+
+<SmartMirror>:
+
+#Header
+    AnchorLayout:
+        anchor_x: 'center'
+        anchor_y: 'top'
+        HeaderSpace:
+            id: _header_space
+            size_hint: 1,None
+            height: 50
+    
+    FloatLayout:
+    	id: _border_top
+    	size_hint: 1, None
+    	height: 3
+		canvas:
+			Color:
+				rgba: 1,1,1,1
+			Rectangle:
+				pos: 0,  root.height-_header_space.height
+				size: self.size
+
+#Body    
+    AnchorLayout:
+        anchor_x: 'center'
+        anchor_y: 'center'
+        BodySpace:
+        	id: _body_space
+            size_hint: 1, None
+            height: root.height - _header_space.height - _footer_space.height
+    
+# Footer
+    AnchorLayout:
+        anchor_x: 'center'
+        anchor_y: 'bottom'
+        FooterSpace:
+            id: _footer_space
+            size_hint: 1,None
+            height: 50
+            
+    FloatLayout:
+    	id: _border_bottom
+    	size_hint: 1, None
+    	height: 3
+		canvas:
+			Color:
+				rgba: 1,1,1,1
+			Rectangle:
+				pos: 0, _footer_space.height
+				size: self.size
+				
+#SuspendScreen
+#	SuspendScreen:
+#		size_hint: 1, None
+#		height: _body_space.height - _border_top.height
+#		pos: 0, _footer_space.height + _border_bottom.height
+#		id: suspendScreen
+#		color: 0,0,0,0
+#		canvas.before:
+#			Color:
+#				rgba: self.color
+#			Rectangle:
+#				pos: self.pos
+#				size: self.size
+#		
+#	FloatLayout
+#		PowerButton:
+#			susi: suspendScreen
+#			source: 'img/power.png'
+#			pos: root.width-self.width - 10, 10

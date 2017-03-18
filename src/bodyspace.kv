@@ -1,0 +1,73 @@
+# File name: bodyspace.kv
+#:kivy 1.9.0
+
+<ProductImage>:
+	size_hint: None, None
+	width: 200
+	height: 200
+
+
+<ProductBox@BoxLayout>:
+	orientation: 'vertical'
+	size_hint: None, None
+	spacing: 20
+	canvas:
+		Color:
+			rgba: 0.4, 0.1, 0.3, 1
+		Rectangle:
+			pos: self.pos
+			size: self.size
+
+<BodySpace@FloatLayout>:
+	canvas:
+		Color:
+			rgba: 0.4, 0.1, 0.3, 1
+		Rectangle:
+			pos: self.pos
+			size: self.size
+			
+	ProductBox:
+		pos: root.width-self.width, root.height-self.height+50
+		width: 200
+		height: 760
+		Label:
+			markup: True
+			font_size: 18
+			text: 'Please choose \n your product'
+		ProductImage:
+			filename: 'shower'
+			source: 'img/shower_on.png'
+		ProductImage:
+			filename: 'tub'
+			source: 'img/tub_on.png'
+		ProductImage:
+			filename: 'washbasin'
+			source: 'img/washbasin_on.png'
+
+	
+	RelativeLayout:
+		Thermostat:
+			id: _thermostat
+    	    size_hint: None, None
+        	pos_hint: {"center_x":0.5, "center_y":0.5}
+        	size: 500, 500
+        	color: 0.3, 0.3, 0.3, 1
+        	canvas:
+            	Color:
+                	rgba: self.color
+#	            Rotate:
+#            		angle: self.angle
+#            		origin: self.center
+	            Ellipse:
+    	        	id: _thermostat_bg
+        	        size: self.size     
+            	    pos: self.pos
+            	Color:
+                	rgba: 1,1,1,1
+            	Line:
+            		id: _thermostat_line
+            		points: self.center_x, self.center_y+200, self.center_x, self.center_y + self.height/2-15
+            		width: 5
+            		cap: "round"
+
+            
