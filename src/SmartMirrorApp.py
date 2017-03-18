@@ -1,3 +1,5 @@
+import datetime
+from math import cos, sin, pi
 import math
 import time
 
@@ -16,10 +18,10 @@ from kivy.uix.button import Button
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.image import Image
 from kivy.uix.label import Label
+from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.scatter import Scatter
 from kivy.uix.widget import Widget
-from kivy.uix.relativelayout import RelativeLayout
-from builtins import str
+from kivy.graphics import Color, Line
 
 
 Builder.load_file('smartmirror.kv')
@@ -33,45 +35,57 @@ class Thermostat(Widget):
     angle = NumericProperty(0)
     minTemp = 20
     maxTemp = 40
-    actualTemp = NumericProperty(30)
+    actualTemp = NumericProperty(None)
+    tempText = StringProperty(None)
+    
+    def __init__(self, **kwargs):
+        super(Thermostat, self).__init__(**kwargs)
+        self.pos_hint= {"center_x":0.5, "center_y":0.5}
+        self.actualTemp = 32
+        self.tempText = self.getCurrentTempAsString()
+
+    def getCurrentTempAsString(self):
+        return str(round(self.actualTemp, 1)) + "\xb0"      
 
     def on_touch_down(self, touch):
-        if self.collide_point(*touch.pos):
-            y = (touch.y - self.center_y)
-            x = (touch.x - self.center_x)
-            calc = math.degrees(math.atan2(y, x))
-            self.prev_angle = calc if calc > 0 else 360+calc
-            self.tmp = self.angle
-        return super(Thermostat, self).on_touch_down(touch) # dispatch touch event further
+        return super(Thermostat, self).on_touch_down(touch)
 
     def on_touch_move(self, touch):
         if self.collide_point(*touch.pos):
             y = (touch.y - self.center_y)
             x = (touch.x - self.center_x)
+            
             calc = math.degrees(math.atan2(y, x))
             new_angle = calc if calc > 0 else 360+calc
             
-            # Change Color
-            if new_angle < 180:
-                newTemp = new_angle / (180 / (self.maxTemp - self.minTemp))
-                self.actualTemp = self.maxTemp - newTemp 
+            if new_angle < 180:           
+                # Change Color
+                self.changeBgColor(new_angle)
+                # set new temperature text
+                self.tempText = self.getCurrentTempAsString()
+                # Move Line
+                self.drawTempLines(new_angle)
                 
-                mediumTemp = (self.maxTemp - self.minTemp) / 2 + self.minTemp
-                colorRed = 0.3 + ((self.actualTemp - mediumTemp) / (self.maxTemp - mediumTemp) * 0.7)
-                belowAv = (self.actualTemp - mediumTemp) *-1
-                colorBlue = 0.3 + (belowAv / (mediumTemp - self.minTemp) * 0.7)
-                self.color = (colorRed, 0.3, colorBlue, 1)
-                #print(str(self.color))
-             
-            #if new_angle < 210 or new_angle > 335:
-#                 self.angle = self.tmp + (new_angle-self.prev_angle)%360
-#                 newColor = self.angle/1000
-#                 print(str(newColor))
-#                 self.color = (1,newColor,newColor,1)
-#             y = (touch.y - self.center_y)
-#             x = (touch.x - self.center_x)
-#             self.angle = 190 - x
         return super(Thermostat, self).on_touch_move(touch)
+
+    def drawTempLines(self, newAngle):
+        self.canvas.after.clear()
+        with self.canvas.after:
+            Color(1, 1, 1)
+            Line(points=[self.center_x+(self.height/2-15)*cos(pi/180*newAngle), self.center_y+(self.width/2-15)*sin(pi/180*newAngle), self.center_x+100*cos(pi/180*newAngle), self.center_y+100*sin(pi/180*newAngle)], width=5, cap="round")
+            for i in range(72):
+                newAngle += 5
+                Line(points=[self.center_x+(self.height/2-15)*cos(pi/180*newAngle), self.center_y+(self.width/2-15)*sin(pi/180*newAngle), self.center_x+110*cos(pi/180*newAngle), self.center_y+110*sin(pi/180*newAngle)], width=2, cap="round")
+            
+    
+    def changeBgColor(self, newAngle):
+        newTemp = newAngle / (180 / (self.maxTemp - self.minTemp))
+        self.actualTemp = self.maxTemp - newTemp 
+        mediumTemp = (self.maxTemp - self.minTemp) / 2 + self.minTemp
+        colorRed = 0.3 + ((self.actualTemp - mediumTemp) / (self.maxTemp - mediumTemp) * 0.7)
+        belowAv = (self.actualTemp - mediumTemp) *-1
+        colorBlue = 0.3 + (belowAv / (mediumTemp - self.minTemp) * 0.7)
+        self.color = (colorRed, 0.3, colorBlue, 1)
 
     def on_touch_up(self, touch):
         pass
@@ -107,14 +121,14 @@ class ProductImage(Image):
         super(ProductImage, self).__init__(**kwargs)
         self.onOff = True
         self.background = None
+        self.isOnMove = False
 
     def on_touch_down(self, event):
-        if self.collide_point(*event.pos):
-            self.toggleImage()
         return super(ProductImage, self).on_touch_up(event)
     
     def on_touch_move(self, event):
         if self.collide_point(event.x, event.y) and time.time() - event.time_start > 0.6:
+            self.isOnMove = True
             self.center = event.pos
             if self.background:
                 self.background.pos = (event.x-self.width/2, event.y-self.height/2)
@@ -122,6 +136,9 @@ class ProductImage(Image):
         return Image.on_touch_move(self, event)
         
     def on_touch_up(self, event):
+        if self.collide_point(*event.pos) and self.isOnMove == False:
+            self.toggleImage()
+        self.isOnMove = False
         return Image.on_touch_up(self, event)
     
     def toggleImage(self):
@@ -155,7 +172,6 @@ class SmartMirror(FloatLayout):
     def configure(self):
         Window.size = (1920, 1080)
         Window.exit_on_escape = 1
-#         Window.fullscreen = True
         Window.borderless = True
         
     def hide_screen(self):

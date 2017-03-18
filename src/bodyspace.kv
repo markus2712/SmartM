@@ -49,25 +49,19 @@
 		Thermostat:
 			id: _thermostat
     	    size_hint: None, None
-        	pos_hint: {"center_x":0.5, "center_y":0.5}
-        	size: 500, 500
+        	size: 300, 300
         	color: 0.3, 0.3, 0.3, 1
-        	canvas:
+        	canvas.before:
             	Color:
                 	rgba: self.color
-#	            Rotate:
-#            		angle: self.angle
-#            		origin: self.center
 	            Ellipse:
     	        	id: _thermostat_bg
         	        size: self.size     
             	    pos: self.pos
-            	Color:
-                	rgba: 1,1,1,1
-            	Line:
-            		id: _thermostat_line
-            		points: self.center_x, self.center_y+200, self.center_x, self.center_y + self.height/2-15
-            		width: 5
-            		cap: "round"
+			Label:
+				center: self.parent.center
+				size: self.parent.width, 50
+				font_size: 64
+				text: self.parent.tempText
 
             
