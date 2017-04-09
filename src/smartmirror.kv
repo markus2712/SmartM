@@ -1,7 +1,6 @@
 # File name: smartmirror.kv
 #:kivy 1.9.0
 
-
 <PowerButton>
 	size_hint: None, None
 	size: 30, 30	
@@ -71,8 +70,15 @@
 #				pos: self.pos
 #				size: self.size
 #		
-#	FloatLayout
+#	FloatLayout:
 #		PowerButton:
 #			susi: suspendScreen
 #			source: 'img/power.png'
 #			pos: root.width-self.width - 10, 10
+
+	FloatLayout:
+		ExitButton:
+			size_hint: None, None
+			size: 30, 30
+			source: 'img/power.png'
+			pos: root.width-self.width - 30, 10

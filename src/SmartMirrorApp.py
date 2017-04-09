@@ -1,7 +1,17 @@
+#!/usr/bin/python3
+
 import datetime
-from math import cos, sin, pi
 import math
 import time
+
+import os
+os.environ['KIVY_WINDOW'] = 'egl_rpi'
+
+import kivy
+kivy.require('1.9.0')
+
+from math import cos, sin, pi
+from RPi import GPIO
 
 from kivy.animation import Animation
 from kivy.app import App
@@ -10,7 +20,7 @@ from kivy.config import Config
 from kivy.core.window import Window
 from kivy.graphics import Rectangle, Color, Ellipse
 from kivy.lang import Builder
-from kivy.properties import StringProperty, ObjectProperty, NumericProperty
+from kivy.properties import StringProperty, ObjectProperty, NumericProperty, BooleanProperty
 from kivy.uix import layout
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.behaviors.drag import DragBehavior
@@ -22,6 +32,7 @@ from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.scatter import Scatter
 from kivy.uix.widget import Widget
 from kivy.graphics import Color, Line
+from kivy.logger import Logger
 
 
 Builder.load_file('smartmirror.kv')
@@ -91,6 +102,14 @@ class Thermostat(Widget):
         pass
 
 
+class ExitButton(Image):
+    
+    def on_touch_down(self, touch):
+        if self.collide_point(touch.x, touch.y):
+            App.get_running_app().stop()
+        return Image.on_touch_down(self, touch)
+
+
 class PowerButton(Image):
    
     susi = ObjectProperty(None)
@@ -116,41 +135,59 @@ class SuspendScreen(FloatLayout):
             return True
 
 class ProductImage(Image):
-       
-    def __init__(self, **kwargs):
-        super(ProductImage, self).__init__(**kwargs)
-        self.onOff = True
-        self.background = None
-        self.isOnMove = False
 
-    def on_touch_down(self, event):
-        return super(ProductImage, self).on_touch_up(event)
+    def __init__(self, **kwargs):
+        self.isOff = True
+        self.background = None
+        self.hasMoved = False
+        self.lastEventID = 0
+        super(ProductImage, self).__init__(**kwargs)
+        
     
     def on_touch_move(self, event):
-        if self.collide_point(event.x, event.y) and time.time() - event.time_start > 0.6:
-            self.isOnMove = True
+        if self.collide_point(*event.pos) and time.time() - event.time_start > 0.6:
+            self.hasMoved = True
             self.center = event.pos
             if self.background:
-                self.background.pos = (event.x-self.width/2, event.y-self.height/2)
-            return True
         return Image.on_touch_move(self, event)
+                self.background.pos = (event.x-self.width/2, event.y-self.height/2)
+            return True            
+
         
     def on_touch_up(self, event):
-        if self.collide_point(*event.pos) and self.isOnMove == False:
-            self.toggleImage()
-        self.isOnMove = False
+        if self.collide_point(*event.pos):
+            
+            Logger.error('on_touch_up hasMoved: ' + str(self.hasMoved) + ' Event: ' + str(event.id) + 'Collide: ' + str(self.collide_point(*event.pos)))
+            #Logger.error('on_touch_up isOff: ' + str(self.isOff))
+            #Logger.info('time: ' + str(time.time()))
+            
+            # Workaround as somehow the event is called twice with the same ID
+            if self.lastEventID != event.id and self.hasMoved == False:
+                self.toggleImage()
+            else:
+                self.hasMoved = False
+            
+            self.lastEventID = event.id
+            return True
+        
         return Image.on_touch_up(self, event)
     
-    def toggleImage(self):
-        if self.onOff == True:
+    def toggleImage(self):   
+        #Logger.error('toggleImage hasMoved: ' + str(self.hasMoved))
+        #Logger.error('toggleImage isOff: ' + str(self.isOff))
+        #Logger.info('time: ' + str(time.time()))
+        if self.isOff == True:
+            GPIO.output(10, False)
             self.source = 'img/' + self.filename + '_off.png'
             with self.canvas.before:
                 self.background = Ellipse(pos=self.pos, size=self.size)
-            self.onOff = False
+            self.isOff = False
         else:
+            GPIO.output(10, True)
             self.source = 'img/' + self.filename + '_on.png'
             self.canvas.before.remove(self.background)
-            self.onOff = True
+            self.isOff = True
+
 
 class SimpleClock(Label):
     
@@ -169,6 +206,7 @@ class SmartMirror(FloatLayout):
     
     blackScreen = None
     
+    # doesnt work with RPi
     def configure(self):
         Window.size = (1920, 1080)
         Window.exit_on_escape = 1
@@ -182,9 +220,13 @@ class SmartMirrorApp(App):
     
     def build(self):         
         smartMirror = SmartMirror()
-        smartMirror.configure()
+#        smartMirror.configure()
+        GPIO.setmode(GPIO.BOARD)
+        GPIO.setup(10, GPIO.OUT)
+        GPIO.output(10, True)
         return smartMirror
 
 
 if __name__ == '__main__':
-    SmartMirrorApp().run()
+    app = SmartMirrorApp()
+    app.run()
